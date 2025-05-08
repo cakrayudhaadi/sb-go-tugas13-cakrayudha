@@ -1,50 +1,147 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 	"tugas13/commons"
 	"tugas13/database"
+	"tugas13/repositories"
+	"tugas13/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Bioskop struct {
-	ID     int     `json:"id"`
-	Nama   string  `json:"nama"`
-	Lokasi string  `json:"lokasi"`
-	Rating float32 `json:"rating"`
-}
-
 func CreateBioskop(ctx *gin.Context) {
 
-	var newBioskop Bioskop
+	var newBioskop structs.Bioskop
+	var result gin.H
 
 	if err := ctx.ShouldBindJSON(&newBioskop); err != nil {
-		ctx.AbortWithError(http.StatusBadRequest, err)
+		result = gin.H{
+			"result": err.Error(),
+		}
+		ctx.JSON(http.StatusBadRequest, result)
 		return
 	}
 	if commons.IsStringEmpty(newBioskop.Nama) {
-		ctx.JSON(http.StatusBadRequest, "parameter nama harus diisi")
+		result = gin.H{
+			"result": "parameter nama harus diisi",
+		}
+		ctx.JSON(http.StatusBadRequest, result)
 		return
 	}
 	if commons.IsStringEmpty(newBioskop.Lokasi) {
-		ctx.JSON(http.StatusBadRequest, "parameter lokasi harus diisi")
+		result = gin.H{
+			"result": "parameter lokasi harus diisi",
+		}
+		ctx.JSON(http.StatusBadRequest, result)
 		return
 	}
 
-	sqlStatement := `
-	INSERT INTO tugas_13.bioskop(nama, lokasi, rating)
-	VALUES ($1, $2, $3)
-	`
+	err := repositories.CreateBioskop(database.DBConnection, newBioskop)
+	if err != nil {
+		result = gin.H{
+			"result": err.Error(),
+		}
+	} else {
+		result = gin.H{
+			"result": "data bioskop berhasil dibuat",
+		}
+	}
+	ctx.JSON(http.StatusCreated, result)
+}
 
-	res, err := database.DBConnection.Exec(sqlStatement, newBioskop.Nama, newBioskop.Lokasi, newBioskop.Rating)
+func GetAllBioskop(ctx *gin.Context) {
+	var result gin.H
+
+	bioskops, err := repositories.GetAllBioskop(database.DBConnection)
 	if err != nil {
-		panic(err)
+		result = gin.H{
+			"result": err.Error(),
+		}
+	} else {
+		result = gin.H{
+			"result": bioskops,
+		}
 	}
-	count, err := res.RowsAffected()
+	ctx.JSON(http.StatusOK, result)
+}
+
+func GetBioskop(ctx *gin.Context) {
+
+	var result gin.H
+	id, _ := strconv.Atoi(ctx.Param("id"))
+
+	count, err := repositories.GetBioskop(database.DBConnection, id)
 	if err != nil {
-		panic(err)
+		result = gin.H{
+			"result": err.Error(),
+		}
+	} else {
+		result = gin.H{
+			"result": count,
+		}
 	}
-	fmt.Println("Created data amount:", count)
+	ctx.JSON(http.StatusOK, result)
+}
+
+func UpdateBioskop(ctx *gin.Context) {
+
+	var newBioskop structs.Bioskop
+	var result gin.H
+	id, _ := strconv.Atoi(ctx.Param("id"))
+
+	if err := ctx.ShouldBindJSON(&newBioskop); err != nil {
+		result = gin.H{
+			"result": err.Error(),
+		}
+		ctx.JSON(http.StatusBadRequest, result)
+		return
+	}
+	if commons.IsStringEmpty(newBioskop.Nama) {
+		result = gin.H{
+			"result": "parameter nama harus diisi",
+		}
+		ctx.JSON(http.StatusBadRequest, result)
+		return
+	}
+	if commons.IsStringEmpty(newBioskop.Lokasi) {
+		result = gin.H{
+			"result": "parameter lokasi harus diisi",
+		}
+		ctx.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	newBioskop.ID = id
+
+	err := repositories.UpdateBioskop(database.DBConnection, newBioskop)
+	if err != nil {
+		result = gin.H{
+			"result": err.Error(),
+		}
+	} else {
+		result = gin.H{
+			"result": "data bioskop berhasil diubah",
+		}
+	}
+	ctx.JSON(http.StatusOK, result)
+}
+
+func DeleteBioskop(ctx *gin.Context) {
+
+	var result gin.H
+	id, _ := strconv.Atoi(ctx.Param("id"))
+
+	err := repositories.DeleteBioskop(database.DBConnection, id)
+	if err != nil {
+		result = gin.H{
+			"result": err.Error(),
+		}
+	} else {
+		result = gin.H{
+			"result": "data bioskop berhasil dihapus",
+		}
+	}
+	ctx.JSON(http.StatusOK, result)
 }
