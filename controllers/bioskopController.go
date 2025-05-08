@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"tugas13/commons"
 	"tugas13/database"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,14 @@ func CreateBioskop(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&newBioskop); err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	if commons.IsStringEmpty(newBioskop.Nama) {
+		ctx.JSON(http.StatusBadRequest, "parameter nama harus diisi")
+		return
+	}
+	if commons.IsStringEmpty(newBioskop.Lokasi) {
+		ctx.JSON(http.StatusBadRequest, "parameter lokasi harus diisi")
 		return
 	}
 
